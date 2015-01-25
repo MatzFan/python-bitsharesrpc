@@ -5,7 +5,7 @@ from distutils.core import setup
 setup(name='python-bitsharesrpc',
       version='0.1',
       description='RPC interface for the BitShares client',
-      long_description=open('README').read(),
+      long_description=open('README.md').read(),
       author='Fabian Schuh',
       author_email='<mail@xeroc.org>',
       maintainer='Fabian Schuh',
