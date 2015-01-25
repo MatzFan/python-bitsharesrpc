@@ -20,6 +20,9 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
+import time
+import sys
+
 try :
     import requests
 except ImportError:
@@ -30,7 +33,10 @@ try :
 except ImportError:
     raise Exception( "Missing dependency: requests" )
 
-import time
+if sys.version > '3' :
+    from .market import market
+else :
+    from market import market
 
 class client(object) :
 
@@ -38,6 +44,7 @@ class client(object) :
        self.auth    = (user,pwd)
        self.url     = url
        self.headers = {'content-type': 'application/json'}
+       self.market  = market(self) # custom market orders
 
     def rpcexec(self,payload) :
         try: 

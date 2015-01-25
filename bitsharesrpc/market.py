@@ -1,50 +1,48 @@
-import bitsharesrpc
-
-class market( bitsharesrpc.client ) :
-    def __init__(self, url, user, pwd) :
-        bitsharesrpc.client.__init__(self, url, user, pwd)
+class market :
+    def __init__(self, client) :
+        self.client = client ## pass rpc commands to the client
 
     def get_asset_id(self, asset):
-        return self.blockchain_get_asset(asset)["result"]["id"]
+        return self.client.blockchain_get_asset(asset)["result"]["id"]
 
     def get_tx_history( self, name, asset ):
-        return self.history(name, asset)["result"]
+        return self.client.history(name, asset)["result"]
 
     def get_precision(self, asset):
-        return self.blockchain_get_asset(asset)["result"]["precision"]
+        return self.client.blockchain_get_asset(asset)["result"]["precision"]
 
     def get_centerprice(self, quote, base):
-        return float(self.blockchain_market_status(quote, base)["result"]["center_price"]["ratio"])
+        return float(self.client.blockchain_market_status(quote, base)["result"]["center_price"]["ratio"])
 
     def get_lowest_ask(self, asset1, asset2):
-        return float(self.blockchain_market_order_book(asset1, asset2)["result"][1][0]["market_index"]["order_price"]["ratio"])
+        return float(self.client.blockchain_market_order_book(asset1, asset2)["result"][1][0]["market_index"]["order_price"]["ratio"])
 
     def get_lowest_bid(self, asset1, asset2):
-        return float(self.blockchain_market_order_book(asset1, asset2)["result"][0][0]["market_index"]["order_price"]["ratio"])
+        return float(self.client.blockchain_market_order_book(asset1, asset2)["result"][0][0]["market_index"]["order_price"]["ratio"])
         
     def cancel_bids_less_than(self, account, quote, base, price):
-        cancel_args = self.get_bids_less_than(account, quote, base, price)[0]
-        response = self.batch("wallet_market_cancel_order", cancel_args)
+        cancel_args = self.client.get_bids_less_than(account, quote, base, price)[0]
+        response = self.client.batch("wallet_market_cancel_order", cancel_args)
         return cancel_args
 
     def get_median(self, asset):
-        response = self.blockchain_get_feeds_for_asset(asset)
+        response = self.client.blockchain_get_feeds_for_asset(asset)
         feeds = response["result"]
         return feeds[len(feeds)-1]["median_price"]
 
     def cancel_bids_out_of_range(self, account, quote, base, price, tolerance):
-        cancel_args = self.get_bids_out_of_range(account, quote, base, price, tolerance)[0]
-        response = self.request("batch", ["wallet_market_cancel_order", cancel_args])
+        cancel_args = self.client.get_bids_out_of_range(account, quote, base, price, tolerance)[0]
+        response = self.client.request("batch", ["wallet_market_cancel_order", cancel_args])
         return cancel_args
 
     def cancel_asks_out_of_range(self, account, quote, base, price, tolerance):
-        cancel_args = self.get_asks_out_of_range(account, quote, base, price, tolerance)[0]
-        response = self.request("batch", ["wallet_market_cancel_order", cancel_args])
+        cancel_args = self.client.get_asks_out_of_range(account, quote, base, price, tolerance)[0]
+        response = self.client.request("batch", ["wallet_market_cancel_order", cancel_args])
         return cancel_args
 
     def get_balance(self, account, asset):
-        asset_id = self.get_asset_id(asset) 
-        response = self.wallet_account_balance(account, asset)
+        asset_id = self.client.get_asset_id(asset) 
+        response = self.client.wallet_account_balance(account, asset)
         if not response:
             return 0
         if "result" not in response() or response()["result"] == None:
@@ -54,21 +52,21 @@ class market( bitsharesrpc.client ) :
         for item in asset_array:
             if item[0] == asset_id:
                 amount = item[1]
-                return amount / self.get_precision(asset)
+                return amount / self.client.get_precision(asset)
         return 0
 
     def cancel_all_orders(self, account, quote, base):
-        cancel_args = self.get_all_orders(account, quote, base)
-        #response = self.request("batch", ["wallet_market_cancel_order", [cancel_args[0]] ])
+        cancel_args = self.client.get_all_orders(account, quote, base)
+        #response = self.client.request("batch", ["wallet_market_cancel_order", [cancel_args[0]] ])
         for i in cancel_args[0] :
-            response = self.wallet_market_cancel_order(i)
+            response = self.client.wallet_market_cancel_order(i)
         return cancel_args[1]
 
     def ask_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
-        response       = self.blockchain_market_order_book(quote, base)
-        quotePrecision = self.get_precision(quote)
-        basePrecision  = self.get_precision(base)
+        response       = self.client.blockchain_market_order_book(quote, base)
+        quotePrecision = self.client.get_precision(quote)
+        basePrecision  = self.client.get_precision(base)
         orders = []
         for order in response["result"][0]: # bid orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
@@ -82,14 +80,14 @@ class market( bitsharesrpc.client ) :
         for o in orders :
             print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.batch("ask", orders)
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+            return self.client.batch("ask", orders)
 
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
-        response       = self.blockchain_market_order_book(quote, base)
-        quotePrecision = self.get_precision(quote)
-        basePrecision  = self.get_precision(base)
+        response       = self.client.blockchain_market_order_book(quote, base)
+        quotePrecision = self.client.get_precision(quote)
+        basePrecision  = self.client.get_precision(base)
         orders = []
         for order in response["result"][1]: # ask orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
@@ -103,11 +101,11 @@ class market( bitsharesrpc.client ) :
         for o in orders :
             print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.batch("bid", orders)
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+            return self.client.batch("bid", orders)
 
     def submit_bid(self, account, amount, quote, price, base):
-        response = self.bid(account, amount, quote, price, base)
+        response = self.client.bid(account, amount, quote, price, base)
         if response.status_code != 200:
             log.info("%s submitted a bid" % account)
             log.info(response)
@@ -115,7 +113,7 @@ class market( bitsharesrpc.client ) :
         else:
             return response
     def submit_ask(self, account, amount, quote, price, base):
-        response = self.ask(account, amount, quote, price, base)
+        response = self.client.ask(account, amount, quote, price, base)
         if response.status_code != 200:
             log.info("%s submitted an ask" % account)
             log.info(response)
@@ -124,9 +122,9 @@ class market( bitsharesrpc.client ) :
             return response
 
     def get_bids_less_than(self, account, quote, base, price):
-        quotePrecision = self.get_precision( quote )
-        basePrecision = self.get_precision( base )
-        response = self.wallet_market_order_list(quote, base, -1, account)
+        quotePrecision = self.client.get_precision( quote )
+        basePrecision = self.client.get_precision( base )
+        response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
         quote_shares = 0
         if "result" not in response or response["result"] == None:
@@ -143,9 +141,9 @@ class market( bitsharesrpc.client ) :
         return [cancel_args, float(quote_shares) / quotePrecision]
 
     def get_bids_out_of_range(self, account, quote, base, price, tolerance):
-        quotePrecision = self.get_precision( quote )
-        basePrecision = self.get_precision( base )
-        response = self.wallet_market_order_list(quote, base, -1, account)
+        quotePrecision = self.client.get_precision( quote )
+        basePrecision = self.client.get_precision( base )
+        response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
         quote_shares = 0
         if "result" not in response or response["result"] == None:
@@ -162,9 +160,9 @@ class market( bitsharesrpc.client ) :
         return [cancel_args, float(quote_shares) / quotePrecision]
 
     def get_asks_out_of_range(self, account, quote, base, price, tolerance):
-        quotePrecision = self.get_precision( quote )
-        basePrecision = self.get_precision( base )
-        response = self.wallet_market_order_list(quote, base, -1, account)
+        quotePrecision = self.client.get_precision( quote )
+        basePrecision = self.client.get_precision( base )
+        response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
         base_shares = 0
         if "result" not in response or response["result"] == None:
@@ -180,13 +178,13 @@ class market( bitsharesrpc.client ) :
         return [cancel_args, base_shares / basePrecision]
 
     def cancel_all_orders(self, account, quote, base):
-        cancel_args = self.get_all_orders(account, quote, base)
+        cancel_args = self.client.get_all_orders(account, quote, base)
         for i in cancel_args[0] :
-            response = self.wallet_market_cancel_order(i)
+            response = self.client.wallet_market_cancel_order(i)
         return cancel_args[1]
 
     def get_all_orders(self, account, quote, base):
-        response = self.wallet_market_order_list(quote, base, -1, account)
+        response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
         orders = []
         if "result" in response :
@@ -199,25 +197,25 @@ class market( bitsharesrpc.client ) :
 
     def get_last_fill (self, quote, base):
         last_fill = -1
-        response = self.blockchain_market_order_history(quote, base, 0, 1)
+        response = self.client.blockchain_market_order_history(quote, base, 0, 1)
         for order in response["result"]:
             last_fill = float(order["ask_price"]["ratio"]) 
         return last_fill
 
     def get_price(self, quote, base):
-        response = self.blockchain_market_order_book(quote, base, 1)
+        response = self.client.blockchain_market_order_book(quote, base, 1)
         order = response["result"]
-        quotePrecision = self.get_precision(quote)
-        basePrecision  = self.get_precision(base)
+        quotePrecision = self.client.get_precision(quote)
+        basePrecision  = self.client.get_precision(base)
         lowest_bid  = float(order[0][0]["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision)
         highest_ask = float(order[1][0]["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision)
         return (lowest_bid+highest_ask)/2
 
     def ask_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
-        response       = self.blockchain_market_order_book(quote, base)
-        quotePrecision = self.get_precision(quote)
-        basePrecision  = self.get_precision(base)
+        response       = self.client.blockchain_market_order_book(quote, base)
+        quotePrecision = self.client.get_precision(quote)
+        basePrecision  = self.client.get_precision(base)
         orders = []
         for order in response["result"][0]: # bid orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
@@ -231,14 +229,14 @@ class market( bitsharesrpc.client ) :
         for o in orders :
             print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.batch("ask", orders)
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+            return self.client.batch("ask", orders)
 
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
-        response       = self.blockchain_market_order_book(quote, base)
-        quotePrecision = self.get_precision(quote)
-        basePrecision  = self.get_precision(base)
+        response       = self.client.blockchain_market_order_book(quote, base)
+        quotePrecision = self.client.get_precision(quote)
+        basePrecision  = self.client.get_precision(base)
         orders = []
         for order in response["result"][1]: # ask orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
@@ -252,5 +250,5 @@ class market( bitsharesrpc.client ) :
         for o in orders :
             print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.batch("bid", orders)
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+            return self.client.batch("bid", orders)
