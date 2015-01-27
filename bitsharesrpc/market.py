@@ -27,9 +27,6 @@ class market :
     def get_asset_id(self, asset):
         return self.client.blockchain_get_asset(asset)["result"]["id"]
 
-    def get_tx_history( self, name, asset ):
-        return self.client.history(name, asset)["result"]
-
     def get_precision(self, asset):
         return self.client.blockchain_get_asset(asset)["result"]["precision"]
 
@@ -63,7 +60,7 @@ class market :
         return cancel_args
 
     def get_balance(self, account, asset):
-        asset_id = self.client.get_asset_id(asset) 
+        asset_id = self.get_asset_id(asset) 
         response = self.client.wallet_account_balance(account, asset)
         if not response:
             return 0
@@ -74,7 +71,7 @@ class market :
         for item in asset_array:
             if item[0] == asset_id:
                 amount = item[1]
-                return amount / self.client.get_precision(asset)
+                return amount / self.get_precision(asset)
         return 0
 
     def cancel_all_orders(self, account, quote, base):
@@ -87,8 +84,8 @@ class market :
     def ask_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
         response       = self.client.blockchain_market_order_book(quote, base)
-        quotePrecision = self.client.get_precision(quote)
-        basePrecision  = self.client.get_precision(base)
+        quotePrecision = self.get_precision(quote)
+        basePrecision  = self.get_precision(base)
         orders = []
         for order in response["result"][0]: # bid orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
@@ -108,8 +105,8 @@ class market :
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
         response       = self.client.blockchain_market_order_book(quote, base)
-        quotePrecision = self.client.get_precision(quote)
-        basePrecision  = self.client.get_precision(base)
+        quotePrecision = self.get_precision(quote)
+        basePrecision  = self.get_precision(base)
         orders = []
         for order in response["result"][1]: # ask orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
@@ -144,8 +141,8 @@ class market :
             return response
 
     def get_bids_less_than(self, account, quote, base, price):
-        quotePrecision = self.client.get_precision( quote )
-        basePrecision = self.client.get_precision( base )
+        quotePrecision = self.get_precision( quote )
+        basePrecision = self.get_precision( base )
         response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
         quote_shares = 0
@@ -163,8 +160,8 @@ class market :
         return [cancel_args, float(quote_shares) / quotePrecision]
 
     def get_bids_out_of_range(self, account, quote, base, price, tolerance):
-        quotePrecision = self.client.get_precision( quote )
-        basePrecision = self.client.get_precision( base )
+        quotePrecision = self.get_precision( quote )
+        basePrecision = self.get_precision( base )
         response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
         quote_shares = 0
@@ -182,8 +179,8 @@ class market :
         return [cancel_args, float(quote_shares) / quotePrecision]
 
     def get_asks_out_of_range(self, account, quote, base, price, tolerance):
-        quotePrecision = self.client.get_precision( quote )
-        basePrecision = self.client.get_precision( base )
+        quotePrecision = self.get_precision( quote )
+        basePrecision = self.get_precision( base )
         response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
         base_shares = 0
@@ -227,8 +224,8 @@ class market :
     def get_price(self, quote, base):
         response = self.client.blockchain_market_order_book(quote, base, 1)
         order = response["result"]
-        quotePrecision = self.client.get_precision(quote)
-        basePrecision  = self.client.get_precision(base)
+        quotePrecision = self.get_precision(quote)
+        basePrecision  = self.get_precision(base)
         lowest_bid  = float(order[0][0]["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision)
         highest_ask = float(order[1][0]["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision)
         return (lowest_bid+highest_ask)/2
@@ -236,8 +233,8 @@ class market :
     def ask_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
         response       = self.client.blockchain_market_order_book(quote, base)
-        quotePrecision = self.client.get_precision(quote)
-        basePrecision  = self.client.get_precision(base)
+        quotePrecision = self.get_precision(quote)
+        basePrecision  = self.get_precision(base)
         orders = []
         for order in response["result"][0]: # bid orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
@@ -257,8 +254,8 @@ class market :
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
         last_fill      = -1
         response       = self.client.blockchain_market_order_book(quote, base)
-        quotePrecision = self.client.get_precision(quote)
-        basePrecision  = self.client.get_precision(base)
+        quotePrecision = self.get_precision(quote)
+        basePrecision  = self.get_precision(base)
         orders = []
         for order in response["result"][1]: # ask orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
