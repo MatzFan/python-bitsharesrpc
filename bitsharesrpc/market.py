@@ -67,9 +67,9 @@ class market :
         response = self.client.wallet_account_balance(account, asset)
         if not response:
             return 0
-        if "result" not in response() or response()["result"] == None:
+        if "result" not in response or response["result"] == None:
             return 0
-        asset_array = response()["result"][0][1]
+        asset_array = response["result"][0][1]
         amount = 0
         for item in asset_array:
             if item[0] == asset_id:
