@@ -40,7 +40,7 @@ class market :
         return float(self.client.blockchain_market_order_book(asset1, asset2)["result"][0][0]["market_index"]["order_price"]["ratio"])
         
     def cancel_bids_less_than(self, account, quote, base, price):
-        cancel_args = self.client.get_bids_less_than(account, quote, base, price)[0]
+        cancel_args = self.get_bids_less_than(account, quote, base, price)[0]
         response = self.client.batch("wallet_market_cancel_order", cancel_args)
         return cancel_args
 
@@ -50,12 +50,12 @@ class market :
         return feeds[len(feeds)-1]["median_price"]
 
     def cancel_bids_out_of_range(self, account, quote, base, price, tolerance):
-        cancel_args = self.client.get_bids_out_of_range(account, quote, base, price, tolerance)[0]
+        cancel_args = self.get_bids_out_of_range(account, quote, base, price, tolerance)[0]
         response = self.client.request("batch", ["wallet_market_cancel_order", cancel_args])
         return cancel_args
 
     def cancel_asks_out_of_range(self, account, quote, base, price, tolerance):
-        cancel_args = self.client.get_asks_out_of_range(account, quote, base, price, tolerance)[0]
+        cancel_args = self.get_asks_out_of_range(account, quote, base, price, tolerance)[0]
         response = self.client.request("batch", ["wallet_market_cancel_order", cancel_args])
         return cancel_args
 
@@ -75,7 +75,7 @@ class market :
         return 0
 
     def cancel_all_orders(self, account, quote, base):
-        cancel_args = self.client.get_all_orders(account, quote, base)
+        cancel_args = self.get_all_orders(account, quote, base)
         #response = self.client.request("batch", ["wallet_market_cancel_order", [cancel_args[0]] ])
         for i in cancel_args[0] :
             response = self.client.wallet_market_cancel_order(i)
@@ -99,7 +99,7 @@ class market :
         for o in orders :
             print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
             return self.client.batch("ask", orders)
 
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
@@ -120,7 +120,7 @@ class market :
         for o in orders :
             print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
             return self.client.batch("bid", orders)
 
     def submit_bid(self, account, amount, quote, price, base):
@@ -197,7 +197,7 @@ class market :
         return [cancel_args, base_shares / basePrecision]
 
     def cancel_all_orders(self, account, quote, base):
-        cancel_args = self.client.get_all_orders(account, quote, base)
+        cancel_args = self.get_all_orders(account, quote, base)
         for i in cancel_args[0] :
             response = self.client.wallet_market_cancel_order(i)
         return cancel_args[1]
@@ -248,7 +248,7 @@ class market :
         for o in orders :
             print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
             return self.client.batch("ask", orders)
 
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
@@ -269,5 +269,5 @@ class market :
         for o in orders :
             print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
             return self.client.batch("bid", orders)
