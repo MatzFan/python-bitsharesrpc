@@ -95,6 +95,6 @@ class client(object) :
                "jsonrpc": "2.0",
                "id": 0
            })
-           assert r != -1 or "error" in r, "Client returns error: %s" % r
+           assert "error" not in r, "Client returns error: %s" % r
            return r
         return method

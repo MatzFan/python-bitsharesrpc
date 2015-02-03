@@ -82,7 +82,6 @@ class market :
         return cancel_args[1]
 
     def ask_at_market_price(self, name, amount, base, quote, confirm=False) :
-        last_fill      = -1
         response       = self.client.blockchain_market_order_book(quote, base)
         quotePrecision = self.get_precision(quote)
         basePrecision  = self.get_precision(base)
@@ -99,11 +98,10 @@ class market :
         for o in orders :
             print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
             return self.client.batch("ask", orders)
 
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
-        last_fill      = -1
         response       = self.client.blockchain_market_order_book(quote, base)
         quotePrecision = self.get_precision(quote)
         basePrecision  = self.get_precision(base)
@@ -120,8 +118,59 @@ class market :
         for o in orders :
             print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
             return self.client.batch("bid", orders)
+
+    def ask_limit(self, name, amount, base, quote, price_limit, confirm=False) :
+        print("Buying orders with price limit: %f %s/%s" % price_limit, base, quote)
+        response       = self.client.blockchain_market_list_bids(quote, base)
+        quotePrecision = self.get_precision(quote)
+        basePrecision  = self.get_precision(base)
+        orders = []
+        for order in response["result"] :
+            order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
+            order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
+            if order_price < price_limit :
+               orders.append([name, amount, base, price_limit, quote])
+               break
+            else:
+               if amount >= order_amount : # buy full amount
+                 orders.append([name, order_amount, base, order_price, quote])
+                 amount -= order_amount
+               elif amount < order_amount: # partial
+                 orders.append([name, amount, base, order_price, quote])
+                 break
+        for o in orders :
+            print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
+        orders = [ i for i in orders ]
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+            return self.client.batch("ask", orders)
+
+    def bid_limit(self, name, amount, base, quote, price_limit, confirm=False) :
+        print("Buying orders with price limit: %f %s/%s" % price_limit, base, quote)
+        response       = self.client.blockchain_market_list_asks(quote, base)
+        quotePrecision = self.get_precision(quote)
+        basePrecision  = self.get_precision(base)
+        orders = []
+        for order in response["result"] :
+            order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
+            order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
+            if order_price > price_limit :
+               orders.append([name, amount, base, price_limit, quote])
+               break
+            else:
+               if amount >= order_amount : # buy full amount
+                 orders.append([name, order_amount, base, order_price, quote])
+                 amount -= order_amount
+               elif amount < order_amount: # partial
+                 orders.append([name, amount, base, order_price, quote])
+                 break
+        for o in orders :
+            print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
+        orders = [ i for i in orders ]
+        if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
+            return self.client.batch("bid", orders)
+
 
     def submit_bid(self, account, amount, quote, price, base):
         response = self.client.bid(account, amount, quote, price, base)
@@ -230,44 +279,3 @@ class market :
         highest_ask = float(order[1][0]["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision)
         return (lowest_bid+highest_ask)/2
 
-    def ask_at_market_price(self, name, amount, base, quote, confirm=False) :
-        last_fill      = -1
-        response       = self.client.blockchain_market_order_book(quote, base)
-        quotePrecision = self.get_precision(quote)
-        basePrecision  = self.get_precision(base)
-        orders = []
-        for order in response["result"][0]: # bid orders
-            order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
-            order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
-            if amount >= order_amount : # buy full amount
-              orders.append([name, order_amount, base, order_price, quote])
-              amount -= order_amount
-            elif amount < order_amount: # partial
-              orders.append([name, amount, base, order_price, quote])
-              break
-        for o in orders :
-            print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
-        orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.client.batch("ask", orders)
-
-    def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
-        last_fill      = -1
-        response       = self.client.blockchain_market_order_book(quote, base)
-        quotePrecision = self.get_precision(quote)
-        basePrecision  = self.get_precision(base)
-        orders = []
-        for order in response["result"][1]: # ask orders
-            order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
-            order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
-            if amount >= order_amount : # buy full amount
-              orders.append([name, order_amount, base, order_price, quote])
-              amount -= order_amount
-            elif amount < order_amount: # partial
-              orders.append([name, amount, base, order_price, quote])
-              break
-        for o in orders :
-            print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
-        orders = [ i for i in orders ]
-        if not confirm or self.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.client.batch("bid", orders)
