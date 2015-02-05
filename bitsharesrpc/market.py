@@ -28,7 +28,7 @@ class market :
         return self.client.blockchain_get_asset(asset)["result"]["id"]
 
     def get_precision(self, asset):
-        return self.client.blockchain_get_asset(asset)["result"]["precision"]
+        return float(self.client.blockchain_get_asset(asset)["result"]["precision"])
 
     def get_centerprice(self, quote, base):
         return float(self.client.blockchain_market_status(quote, base)["result"]["center_price"]["ratio"])
