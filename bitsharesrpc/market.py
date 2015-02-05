@@ -64,7 +64,7 @@ class market :
         response = self.client.wallet_account_balance(account, asset)
         if not response:
             return 0
-        if "result" not in response or response["result"] == None:
+        if "result" not in response or response["result"] == None or not len(response["result"]):
             return 0
         asset_array = response["result"][0][1]
         amount = 0
@@ -109,6 +109,7 @@ class market :
         for order in response["result"][1]: # ask orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
             order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
+            if order_price == 0.0 or order_amount == 0.0 : continue ## FIXME : rounding error
             if amount >= order_amount : # buy full amount
               orders.append([name, order_amount, base, order_price, quote])
               amount -= order_amount
@@ -122,7 +123,7 @@ class market :
             return self.client.batch("bid", orders)
 
     def ask_limit(self, name, amount, base, quote, price_limit, confirm=False) :
-        print("Buying orders with price limit: %f %s/%s" % price_limit, base, quote)
+        print("Buying orders with price limit: %f %s/%s" % (price_limit, base, quote))
         response       = self.client.blockchain_market_list_bids(quote, base)
         quotePrecision = self.get_precision(quote)
         basePrecision  = self.get_precision(base)
@@ -130,6 +131,7 @@ class market :
         for order in response["result"] :
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
             order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
+            if order_price == 0.0 or order_amount == 0.0 : continue ## FIXME : rounding error
             if order_price < price_limit :
                orders.append([name, amount, base, price_limit, quote])
                break
@@ -147,7 +149,7 @@ class market :
             return self.client.batch("ask", orders)
 
     def bid_limit(self, name, amount, base, quote, price_limit, confirm=False) :
-        print("Buying orders with price limit: %f %s/%s" % price_limit, base, quote)
+        print("Sell orders with price limit: %f %s/%s" % (price_limit, base, quote))
         response       = self.client.blockchain_market_list_asks(quote, base)
         quotePrecision = self.get_precision(quote)
         basePrecision  = self.get_precision(base)
