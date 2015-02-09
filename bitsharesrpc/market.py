@@ -247,12 +247,6 @@ class market :
         cancel_args = [item for item in order_ids]
         return [cancel_args, base_shares / basePrecision]
 
-    def cancel_all_orders(self, account, quote, base):
-        cancel_args = self.get_all_orders(account, quote, base)
-        for i in cancel_args[0] :
-            response = self.client.wallet_market_cancel_order(i)
-        return cancel_args[1]
-
     def get_all_orders(self, account, quote, base):
         response = self.client.wallet_market_order_list(quote, base, -1, account)
         order_ids = []
