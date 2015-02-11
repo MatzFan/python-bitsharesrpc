@@ -76,7 +76,6 @@ class market :
 
     def cancel_all_orders(self, account, quote, base):
         cancel_args = self.get_all_orders(account, quote, base)
-        #response = self.client.request("batch", ["wallet_market_cancel_order", [cancel_args[0]] ])
         for i in cancel_args[0] :
             response = self.client.wallet_market_cancel_order(i)
         return cancel_args[1]
@@ -97,9 +96,9 @@ class market :
               break
         for o in orders :
             print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
-        orders = [ i for i in orders ]
         if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.client.batch("ask", orders)
+           for o in orders :
+               self.submit_ask(o[0], o[1], o[2], o[3], o[4])
 
     def bid_at_market_price(self, name, amount, base, quote, confirm=False) :
         response       = self.client.blockchain_market_order_book(quote, base)
@@ -117,10 +116,10 @@ class market :
               orders.append([name, amount, base, order_price, quote])
               break
         for o in orders :
-            print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
-        orders = [ i for i in orders ]
+            print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.client.batch("bid", orders)
+           for o in orders :
+               self.submit_bid(o[0], o[1], o[2], o[3], o[4])
 
     def ask_limit(self, name, amount, base, quote, price_limit, confirm=False) :
         print("Buying orders with price limit: %f %s/%s" % (price_limit, base, quote))
@@ -144,9 +143,9 @@ class market :
                  break
         for o in orders :
             print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
-        orders = [ i for i in orders ]
         if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.client.batch("ask", orders)
+           for o in orders :
+               self.submit_ask(o[0], o[1], o[2], o[3], o[4])
 
     def bid_limit(self, name, amount, base, quote, price_limit, confirm=False) :
         print("Sell orders with price limit: %f %s/%s" % (price_limit, base, quote))
@@ -169,27 +168,18 @@ class market :
                  break
         for o in orders :
             print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
-        orders = [ i for i in orders ]
         if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
-            return self.client.batch("bid", orders)
+           for o in orders :
+               self.submit_bid(o[0], o[1], o[2], o[3], o[4])
 
 
     def submit_bid(self, account, amount, quote, price, base):
-        response = self.client.bid(account, amount, quote, price, base)
-        if response.status_code != 200:
-            log.info("%s submitted a bid" % account)
-            log.info(response)
-            return False
-        else:
-            return response
+        print("%s submitted a bid" % account)
+        self.client.bid(account, amount, quote, price, base)
+
     def submit_ask(self, account, amount, quote, price, base):
-        response = self.client.ask(account, amount, quote, price, base)
-        if response.status_code != 200:
-            log.info("%s submitted an ask" % account)
-            log.info(response)
-            return False
-        else:
-            return response
+        print("%s submitted an ask" % account)
+        self.client.ask(account, amount, quote, price, base)
 
     def get_bids_less_than(self, account, quote, base, price):
         quotePrecision = self.get_precision( quote )
@@ -206,7 +196,7 @@ class market :
                 if float(item["market_index"]["order_price"]["ratio"])* (basePrecision / quotePrecision) < price:
                     order_ids.append(order_id)
                     quote_shares += int(item["state"]["balance"])
-                    log.info("%s canceled an order: %s" % (account, str(item)))
+                    print("%s canceled an order: %s" % (account, str(item)))
         cancel_args = [item for item in order_ids]
         return [cancel_args, float(quote_shares) / quotePrecision]
 
@@ -225,7 +215,7 @@ class market :
                 if abs(price - float(item["market_index"]["order_price"]["ratio"]) * (basePrecision / quotePrecision)) > tolerance:
                     order_ids.append(order_id)
                     quote_shares += int(item["state"]["balance"])
-                    log.info("%s canceled an order: %s" % (account, str(item)))
+                    print("%s canceled an order: %s" % (account, str(item)))
         cancel_args = [item for item in order_ids]
         return [cancel_args, float(quote_shares) / quotePrecision]
 
