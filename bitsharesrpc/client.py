@@ -22,6 +22,7 @@
 
 import time
 import sys
+import getpass
 
 try :
     import requests
@@ -86,6 +87,21 @@ class client(object) :
             else:
                 sys.stdout.write("Please respond with 'yes' or 'no' "
                                  "(or 'y' or 'n').\n")              
+    def unlock(self, timeout, pwd) :
+        while True :
+            try :
+               r = self.rpcexec({
+                   "method": "unlock",
+                   "params": [ timeout, pwd ],
+                   "jsonrpc": "2.0",
+                   "id": 0
+               })
+               assert "error" not in r
+               assert "result" in r
+               return r
+            except :
+                print("Authentication failed. Enter wallet passphrase manually: ")
+                pwd = getpass.getpass()
 
     def __getattr__(self, name) :
         def method(*args):
