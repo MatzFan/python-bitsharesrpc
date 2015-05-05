@@ -20,6 +20,8 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
+from math import log10
+
 class market :
     def __init__(self, client) :
         self.client = client ## pass rpc commands to the client
@@ -70,7 +72,7 @@ class market :
         amount = 0
         for item in asset_array:
             if item[0] == asset_id:
-                amount = item[1]
+                amount = float(item[1])
                 return amount / self.get_precision(asset)
         return 0
 
@@ -108,7 +110,6 @@ class market :
         for order in response["result"][1]: # ask orders
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
             order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
-            if order_price == 0.0 or order_amount == 0.0 : continue ## FIXME : rounding error
             if amount >= order_amount : # buy full amount
               orders.append([name, order_amount, base, order_price, quote])
               amount -= order_amount
@@ -130,7 +131,6 @@ class market :
         for order in response["result"] :
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
             order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
-            if order_price == 0.0 or order_amount == 0.0 : continue ## FIXME : rounding error
             if order_price < price_limit :
                orders.append([name, amount, base, price_limit, quote])
                break
@@ -142,10 +142,11 @@ class market :
                  orders.append([name, amount, base, order_price, quote])
                  break
         for o in orders :
-            print( "Selling %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
+            print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
            for o in orders :
-               self.submit_ask(o[0], o[1], o[2], o[3], o[4])
+               amount = str('%.*f' %(int(log10(quotePrecision)), o[1]))
+               self.submit_ask(o[0], amount, o[2], o[3], o[4])
 
     def bid_limit(self, name, amount, base, quote, price_limit, confirm=False) :
         print("Sell orders with price limit: %f %s/%s" % (price_limit, base, quote))
@@ -155,7 +156,7 @@ class market :
         orders = []
         for order in response["result"] :
             order_price  = float(order["market_index"]["order_price"]["ratio"])*(basePrecision / quotePrecision) 
-            order_amount = float(order["state"]["balance"]/quotePrecision) / order_price  # denoted in BASE
+            order_amount = float(order["state"]["balance"])/order_price/quotePrecision  # denoted in BASE
             if order_price > price_limit :
                orders.append([name, amount, base, price_limit, quote])
                break
@@ -170,7 +171,8 @@ class market :
             print( "Buying %15.8f %s for %12.8f %s @ %12.8f" %(o[1], o[2], o[1]*o[3], o[4], o[3]) )
         if not confirm or self.client.query_yes_no( "I dare you confirm the orders above: ") :
            for o in orders :
-               self.submit_bid(o[0], o[1], o[2], o[3], o[4])
+               amount = str('%.*f' %(int(log10(quotePrecision)), o[1]))
+               self.submit_bid(o[0], amount, o[2], o[3], o[4])
 
 
     def submit_bid(self, account, amount, quote, price, base):
