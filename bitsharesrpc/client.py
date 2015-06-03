@@ -39,6 +39,19 @@ if sys.version > '3' :
 else :
     from market import market
 
+class UnauthorizedError(Exception):
+    pass
+
+class RPCError(Exception):
+    pass
+
+class RPCJson(Exception) :
+    pass
+
+class RPCConnection(Exception) :
+    pass
+
+
 class client(object) :
 
     def __init__(self, url, user, pwd) :
@@ -48,16 +61,25 @@ class client(object) :
        self.market  = market(self) # custom market orders
 
     def rpcexec(self,payload) :
-        try: 
+        try : 
             response = requests.post(self.url, data=json.dumps(payload), headers=self.headers, auth=self.auth)
-        except:
-            raise Exception("Connection failed! Check host, port, and authentication!")
+            if response.status_code == 401:
+                raise UnauthorizedError()
+        except :
+            raise RPCConnection()
 
-        try: 
+        try : 
             ret = json.loads(response.text)
-        except:
-            raise Exception("Error parsing JSON output: %s" % response.text)
-        return ret
+        except :
+            raise RPCJson()
+
+        if 'error' in ret :
+            if 'detail' in ret['error']:
+                raise RPCError(ret['error']['detail'])
+            else:
+                raise RPCError(ret['error']['message'])
+        else :
+            return ret
 
     def wait_for_block(self):
         response = self.get_info()
@@ -87,6 +109,7 @@ class client(object) :
             else:
                 sys.stdout.write("Please respond with 'yes' or 'no' "
                                  "(or 'y' or 'n').\n")              
+
     def unlock(self, timeout, pwd) :
         while True :
             try :
