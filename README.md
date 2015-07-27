@@ -4,7 +4,7 @@ Python module for the BitShares client
 # Requirements #
 * python-requests
 
-# Configuration of the BitSahres client #
+# Configuration of the BitShares client #
 The BitShares client needs the RPC interface enabled and username, password,
 and port set. The relevant port for this module is the port of the
 'httpd_endpoint'. Two ways exist to do so:
